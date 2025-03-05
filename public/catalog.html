@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Книжный Магазин</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: beige; }
+        
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgb(197, 152, 92); padding: 15px; color: white;
+        }
+
+        .search-bar { display: flex; gap: 10px; }
+        .search-bar input { padding: 5px; width: 200px; }
+        .search-bar button {
+            padding: 5px 10px; background: cornsilk; border: none; cursor: pointer;
+        }
+        .search-bar button:hover { background: white; }
+
+        nav { display: flex; gap: 15px; }
+        nav a { color: white; text-decoration: none; font-weight: bold; }
+        nav a:hover { text-decoration: underline; }
+
+        #user-info {
+            display: none; /* Скрываем, если пользователь не вошел */
+            color: white;
+        }
+
+        main {
+            max-width: 1000px; margin: 20px auto; background: white;
+            padding: 20px; border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        #books-list {
+            display: flex; flex-wrap: wrap; gap: 15px; justify-content: center;
+        }
+
+        .book {
+            background: #fff; border: 1px solid #ddd; padding: 10px;
+            width: 200px; text-align: center; border-radius: 5px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .book img { width: 100%; height: auto; border-radius: 5px; }
+        .book h3 { font-size: 18px; margin: 10px 0 5px; }
+        .book p { margin: 5px 0; font-size: 14px; color: #555; }
+
+        .admin-actions { margin-top: 10px; }
+        .admin-actions button {
+            background: red; color: white; border: none; padding: 5px 10px; cursor: pointer;
+        }
+        .admin-actions button:hover { background: darkred; }
+
+        #logout-link { color: white; text-decoration: none; font-weight: bold; margin-left: 15px; padding: 5px 10px; border-radius: 5px; }
+        #logout-link:hover { text-decoration: underline }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Книжный Магазин</h1>
+        <div class="search-bar">
+            <input type="text" id="search" placeholder="Поиск книг...">
+            <button onclick="searchBooks()">🔍</button>
+        </div>
+        <nav id="auth-nav">
+            <a href="/login.html" id="login-link">Войти</a>
+            <a href="/register.html" id="register-link">Регистрация</a>
+            <span id="user-info" style="display: none;">
+                <b id="username"></b>
+                <a href="#" id="logout-link" onclick="logout()">Выйти</a>
+            </span>
+        </nav>
+    </header>
+
+    <main>
+        <h2>Каталог книг</h2>
+        <label for="genre">Жанры:</label>
+        <select id="genre" onchange="filterBooks()">
+            <option value="">Все</option>
+            <option value="Фэнтези">Фэнтези</option>
+            <option value="Детектив">Детектив</option>
+            <option value="Роман">Роман</option>
+        </select>
+        <div id="books-list"></div>
+    </main>
+
+    <script>
+        function checkAuth() {
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (user) {
+            document.getElementById('username').textContent = user.name; 
+            document.getElementById('user-info').style.display = 'inline-block';
+            document.getElementById('login-link').style.display = 'none';
+            document.getElementById('register-link').style.display = 'none';
+        }
+    }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login.html';
+        }
+
+        async function loadBooks(genre = "", search = "") {
+            let url = `/books?genre=${genre}&search=${search}&nocache=${new Date().getTime()}`;
+            const response = await fetch(url);
+            const books = await response.json();
+            const token = localStorage.getItem("token");
+            const isAdmin = token && JSON.parse(atob(token.split(".")[1])).role === "admin";
+
+            document.getElementById("books-list").innerHTML = books.map(book => `
+                <div class="book">
+                    <img src="${book.coverImage}" alt="${book.title}">
+                    <h3>${book.title}</h3>
+                    <p>Автор: ${book.author}</p>
+                    <p>Жанр: ${book.genre}</p>
+                    <p>Цена: ${book.price}₸</p>
+                    ${isAdmin ? `<div class="admin-actions">
+                        <button onclick="deleteBook('${book._id}')">Удалить</button>
+                    </div>` : ""}
+                </div>
+            `).join("");
+        }
+
+        async function deleteBook(bookId) {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                alert("Нет доступа");
+                return;
+            }
+
+            const response = await fetch(`/books/${bookId}`, {
+                method: "DELETE",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                alert("Книга удалена!");
+                loadBooks();
+            } else {
+                alert("Ошибка удаления книги!");
+            }
+        }
+
+        function filterBooks() {
+            const genre = document.getElementById("genre").value;
+            loadBooks(genre);
+        }
+
+        function searchBooks() {
+            const search = document.getElementById("search").value;
+            loadBooks("", search);
+        }
+        
+        document.addEventListener("DOMContentLoaded", () => {
+            checkAuth();
+            loadBooks();
+        });
+    </script>
+
+</body>
+</html>
