@@ -5,9 +5,9 @@ const { body, validationResult } = require('express-validator');
 const User = require('../model/users');
 
 const router = express.Router();
-const JWT_SECRET = "123456";
+const JWT_SECRET = "123456"; 
 
-// регистрация
+// регистрация пользователя
 router.post('/register', [
     body('name').notEmpty().withMessage("Имя обязательно"),
     body('email').isEmail().withMessage("Некорректный email"),
@@ -32,17 +32,23 @@ router.post('/register', [
         // хешируем пароль
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const newUser = new User({ name, email, password: hashedPassword });
+        const newUser = new User({
+            name,
+            email,
+            password: hashedPassword,
+            role: 'user' 
+        });
+
         await newUser.save();
 
         // генерируем токен
         const token = jwt.sign(
-            { id: newUser._id, email: newUser.email },
+            { id: newUser._id, email: newUser.email, role: newUser.role },
             JWT_SECRET,
             { expiresIn: '1h' }
         );
 
-        console.log("Токен при регистрации:", token); // логируем токен
+        console.log("Токен при регистрации:", token);
 
         res.status(201).json({ message: "Регистрация успешна!", token });
 
@@ -81,12 +87,12 @@ router.post('/login', [
 
         // генерируем JWT-токен
         const token = jwt.sign(
-            { id: user._id, email: user.email },
+            { id: user._id, email: user.email, role: user.role },
             JWT_SECRET,
-            { expiresIn: '1h' } // токен истекает через 1 час
+            { expiresIn: '24h' }
         );
 
-        console.log("Токен при входе:", token); // Логируем токен
+        console.log("Токен при входе:", token); // логируем токен
 
         res.json({ message: "Вход успешен!", token });
 
