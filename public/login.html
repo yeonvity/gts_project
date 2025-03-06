@@ -43,20 +43,34 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const messageElement = document.getElementById('message');
-    
-            const response = await fetch('/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
-    
-            const data = await response.json();
-            if (response.ok) {
-                localStorage.setItem('token', data.token);
-                localStorage.setItem('user', JSON.stringify({ name: data.name, role: data.role }));
-                window.location.href = '/catalog.html';
-            } else {
-                messageElement.textContent = data.message || "Ошибка входа!";
+
+            try {
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                console.log("Ответ сервера:", data); //логируем ответ сервера
+
+                if (response.ok && data.token && data.user) {
+                    // сохраняем токен и пользователя в LocalStorage
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+
+                    // проверяем роль пользователя и перенаправляем
+                    if (data.user.role === "admin") {
+                        window.location.href = '/admin.html'; // admin попадает в админ-панель
+                    } else {
+                        window.location.href = '/catalog.html'; // user попадает в каталог
+                    }
+                } else {
+                    messageElement.textContent = data.message || "Ошибка входа!";
+                }
+            } catch (error) {
+                console.error("Ошибка при отправке запроса:", error);
+                messageElement.textContent = "Ошибка подключения к серверу!";
             }
         });
     </script>
