@@ -50,7 +50,11 @@ router.post('/register', [
 
         console.log("Токен при регистрации:", token);
 
-        res.status(201).json({ message: "Регистрация успешна!", token });
+        res.status(201).json({ 
+            message: "Регистрация успешна!", 
+            token, 
+            user: { name: newUser.name, role: newUser.role }  // отправляем user
+        });
 
     } catch (error) {
         console.error("Ошибка сервера:", error);
@@ -94,7 +98,11 @@ router.post('/login', [
 
         console.log("Токен при входе:", token); // логируем токен
 
-        res.json({ message: "Вход успешен!", token });
+        res.json({ 
+            message: "Вход успешен!", 
+            token, 
+            user: { name: user.name, role: user.role }  // отправляем user
+        });
 
     } catch (error) {
         console.error("Ошибка сервера:", error);
