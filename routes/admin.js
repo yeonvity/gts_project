@@ -1,20 +1,9 @@
 const express = require('express');
-const User = require('../model/users');
 const Book = require('../model/books');
 const authMiddleware = require('../middleware/auth');
 const adminMiddleware = require('../middleware/admin');
 
 const router = express.Router();
-
-// получение всех users
-router.get('/users', authMiddleware, adminMiddleware, async (req, res) => {
-    try {
-        const users = await User.find({}, { password: 0 }); // исключаем пароль
-        res.json(users);
-    } catch (error) {
-        res.status(500).json({ message: "Ошибка сервера", error });
-    }
-});
 
 // получение всех книг
 router.get('/books', authMiddleware, adminMiddleware, async (req, res) => {
@@ -26,18 +15,61 @@ router.get('/books', authMiddleware, adminMiddleware, async (req, res) => {
     }
 });
 
-// удаление user
-router.delete('/users/:id', authMiddleware, adminMiddleware, async (req, res) => {
+// добавить новую книгу
+router.post('/books/add', authMiddleware, adminMiddleware, async (req, res) => {
     try {
-        const user = await User.findById(req.params.id);
-        if (!user) {
-            return res.status(404).json({ message: "Пользователь не найден" });
+        const { title, author, genre, coverImage, price } = req.body;
+
+        if (!title || !author || !genre || !price) {
+            return res.status(400).json({ message: "Заполните обязательные поля!" });
         }
 
-        await User.findByIdAndDelete(req.params.id);
-        res.json({ message: "Пользователь удален" });
+        const newBook = new Book({
+            title,
+            author,
+            genre,
+            coverImage,
+            price
+        });
+
+        await newBook.save();
+        res.status(201).json({ message: "Книга добавлена!", book: newBook });
     } catch (error) {
-        res.status(500).json({ message: "Ошибка сервера", error });
+        res.status(500).json({ message: "Ошибка при добавлении книги", error });
+    }
+});
+
+// удалить книгу по ID
+router.delete('/books/:id', authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const deletedBook = await Book.findByIdAndDelete(id);
+
+        if (!deletedBook) {
+            return res.status(404).json({ message: "Книга не найдена" });
+        }
+
+        res.json({ message: "Книга успешно удалена", book: deletedBook });
+    } catch (error) {
+        res.status(500).json({ message: "Ошибка при удалении книги", error });
+    }
+});
+
+// обновить книгу по ID
+router.patch('/books/:id', authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updateData = req.body;
+
+        const updatedBook = await Book.findByIdAndUpdate(id, updateData, { new: true });
+
+        if (!updatedBook) {
+            return res.status(404).json({ message: "Книга не найдена" });
+        }
+
+        res.json({ message: "Книга успешно обновлена", book: updatedBook });
+    } catch (error) {
+        res.status(500).json({ message: "Ошибка при обновлении книги", error });
     }
 });
 
