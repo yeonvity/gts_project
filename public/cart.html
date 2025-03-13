@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Корзина</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: beige;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgb(197, 152, 92);
+            padding: 15px;
+            color: white;
+            border-radius: 8px;
+        }
+
+        header h1 {
+            margin: 0;
+        }
+
+        main {
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background: #f4f4f4;
+        }
+
+        button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-weight: bold;
+        }
+
+        button.remove-btn {
+            background: red;
+            color: white;
+        }
+
+        button.remove-btn:hover {
+            background: darkred;
+        }
+
+        button.add-btn {
+            background: green;
+            color: white;
+        }
+
+        button.add-btn:hover {
+            background: darkgreen;
+        }
+
+        button.decrease-btn {
+            background: orange;
+            color: white;
+        }
+
+        button.decrease-btn:hover {
+            background: darkorange;
+        }
+
+        .total {
+            text-align: right;
+            font-size: 20px;
+            margin-top: 20px;
+        }
+
+        .checkout-btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            margin-top: 20px;
+            background: green;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .checkout-btn:hover {
+            background: darkgreen;
+        }
+
+        .empty-cart {
+            text-align: center;
+            font-size: 20px;
+            margin: 50px 0;
+        }
+
+        a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Ваша корзина</h1>
+    <a href="/catalog">Каталог</a>
+</header>
+
+<main>
+    <h2>Товары в корзине</h2>
+    <div id="cart-container"></div>
+</main>
+
+<script>
+    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+
+    function renderCart() {
+        const container = document.getElementById('cart-container');
+        container.innerHTML = '';
+
+        if (cart.length === 0) {
+            container.innerHTML = '<p class="empty-cart">Ваша корзина пуста</p>';
+            return;
+        }
+
+        let totalPrice = 0;
+
+        const table = document.createElement('table');
+        const thead = `
+            <tr>
+                <th>Книга</th>
+                <th>Цена</th>
+                <th>Кол-во</th>
+                <th>Действия</th>
+            </tr>`;
+        table.innerHTML = thead;
+
+        cart.forEach((item, index) => {
+            if (!item.quantity) item.quantity = 1;
+
+            const itemTotal = item.price * item.quantity;
+            totalPrice += itemTotal;
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${item.title}</td>
+                <td>${item.price}₸</td>
+                <td>${item.quantity}</td>
+                <td>
+                    <button class="add-btn" onclick="increaseQuantity(${index})">+</button>
+                    <button class="decrease-btn" onclick="decreaseQuantity(${index})">-</button>
+                    <button class="remove-btn" onclick="removeFromCart(${index})">Удалить</button>
+                </td>
+            `;
+            table.appendChild(row);
+        });
+
+        container.appendChild(table);
+
+        const totalBlock = document.createElement('div');
+        totalBlock.className = 'total';
+        totalBlock.innerHTML = `<strong>Итого: ${totalPrice}₸</strong>`;
+        container.appendChild(totalBlock);
+
+        const checkoutBtn = document.createElement('button');
+        checkoutBtn.className = 'checkout-btn';
+        checkoutBtn.textContent = 'Оформить заказ';
+        checkoutBtn.onclick = checkout;
+        container.appendChild(checkoutBtn);
+    }
+
+    function increaseQuantity(index) {
+        cart[index].quantity++;
+        saveCart();
+        renderCart();
+    }
+
+    function decreaseQuantity(index) {
+        if (cart[index].quantity > 1) {
+            cart[index].quantity--;
+        } else {
+            cart.splice(index, 1);
+        }
+        saveCart();
+        renderCart();
+    }
+
+    function removeFromCart(index) {
+        cart.splice(index, 1);
+        saveCart();
+        renderCart();
+    }
+
+    async function checkout() {
+    if (cart.length === 0) return alert("Корзина пуста!");
+
+    const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const token = localStorage.getItem('token');
+
+    const response = await fetch('/orders-api', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ items: cart, totalAmount })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+        alert(data.message);
+        cart = [];
+        saveCart();
+        renderCart();
+    } else {
+        alert("Ошибка: " + data.message);
+    }
+}
+
+    function saveCart() {
+        localStorage.setItem('cart', JSON.stringify(cart));
+    }
+
+    document.addEventListener('DOMContentLoaded', renderCart);
+</script>
+</body>
+</html>
