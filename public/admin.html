@@ -30,17 +30,14 @@
             align-items: center;
         }
 
-        nav button {
+        nav a, nav button {
             background: none;
             border: none;
             color: white;
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
-        }
-
-        nav button:hover {
-            text-decoration: underline;
+            text-decoration: none;
         }
 
         main {
@@ -61,6 +58,7 @@
             flex-wrap: wrap;
             gap: 10px;
             margin-bottom: 20px;
+            justify-content: center;
         }
 
         input, select, button {
@@ -68,21 +66,43 @@
             margin: 5px 0;
             border-radius: 5px;
             display: block;
+            border: 1px solid #ccc;
         }
-
+        
         button {
             color: white;
             border: none;
             cursor: pointer;
         }
 
+        .add-btn {
+            background: green;
+        }
+
+        .add-btn:hover {
+            background: darkgreen;
+        }
+
+        #books-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+            padding: 10px;
+        }
+
         .book {
             background: #fff;
             border: 1px solid #ddd;
-            padding: 10px;
-            width: 200px;
+            padding: 15px;
+            width: 220px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
             text-align: center;
-            border-radius: 5px;
+            border-radius: 8px;
             box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
         }
 
@@ -90,11 +110,12 @@
             width: 100%;
             height: auto;
             border-radius: 5px;
+            margin-bottom: 10px;
         }
 
         .book h3 {
             font-size: 18px;
-            margin: 10px 0 5px;
+            margin: 10px 0 5px
         }
 
         .book p {
@@ -103,16 +124,20 @@
             color: #555;
         }
 
-        .admin-actions button {
+        .book button.delete-btn {
             background: red;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            cursor: pointer;
+        }
+        
+        .book button.delete-btn:hover {
+            background: darkred;
+        }
+        
+        .book button.edit-btn {
+            background: green;
         }
 
-        .admin-actions button:hover {
-            background: darkred;
+        .book button.edit-btn:hover {
+            background: darkgreen;
         }
 
     </style>
@@ -122,6 +147,7 @@
     <header>
         <h1>Админ-панель</h1>
         <nav>
+            <a href="/catalog">Каталог</a>
             <button onclick="logout()">Выйти</button>
         </nav>
     </header>
@@ -140,7 +166,7 @@
             </select>
             <input type="text" id="coverImage" placeholder="Ссылка на обложку">
             <input type="number" id="price" placeholder="Цена">
-            <button onclick="addBook()">Добавить книгу</button>
+            <button class="add-btn" onclick="addBook()">Добавить книгу</button>
         </div>
 
         <h2>Список книг</h2>
@@ -158,14 +184,14 @@
             const token = localStorage.getItem("token");
             if (!token) {
                 alert("Нет доступа. Пожалуйста, войдите как админ.");
-                window.location.href = "/login.html";
+                window.location.href = "/login";
             }
 
             try {
                 const decodedToken = JSON.parse(atob(token.split(".")[1]));
                 if (decodedToken.role !== "admin") {
                     alert("У вас нет прав администратора!");
-                    window.location.href = "/catalog.html";
+                    window.location.href = "/catalog";
                 }
             } catch (error) {
                 console.error("Ошибка проверки токена:", error);
@@ -177,31 +203,28 @@
         function logout() {
             localStorage.removeItem("token");
             localStorage.removeItem("user");
-            window.location.href = "/login.html";
+            window.location.href = "/login";
         }
 
         // загрузка списка книг
         async function loadBooks() {
             try {
-                let url = `/books?nocache=${new Date().getTime()}`;
-                const response = await fetch(url, {
+                const response = await fetch('/books', {
                     headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
                 });
-
-                if (!response.ok) throw new Error("Ошибка загрузки книг");
-
                 const books = await response.json();
-                document.getElementById("books-list").innerHTML = books.map(book => `
+                console.log("Книги:", books);
+
+                const booksList = document.getElementById("books-list");
+                booksList.innerHTML = books.map(book => `
                     <div class="book">
                         <img src="${book.coverImage}" alt="${book.title}">
                         <h3>${book.title}</h3>
                         <p>Автор: ${book.author}</p>
                         <p>Жанр: ${book.genre}</p>
                         <p>Цена: ${book.price}₸</p>
-                        <div class="admin-actions">
-                            <button onclick="deleteBook('${book._id}')">Удалить</button>
-                            <button onclick="editBook('${book._id}')">Изменить</button>
-                        </div>
+                        <button class="edit-btn" onclick="editBook('${book._id}')">Редактировать</button>
+                        <button class="delete-btn" onclick="deleteBook('${book._id}')">Удалить</button>
                     </div>
                 `).join("");
             } catch (error) {
@@ -237,7 +260,7 @@
                     alert("Книга добавлена!");
                     loadBooks();
                 } else {
-                    alert("Ошибка при добавлении книги: " + data.message);
+                    alert("Ошибка: " + data.message);
                 }
             } catch (error) {
                 console.error("Ошибка при добавлении книги:", error);
@@ -246,17 +269,20 @@
 
         // удаление книги
         async function deleteBook(bookId) {
+            if (!confirm("Вы уверены, что хотите удалить эту книгу?")) return;
+
             try {
                 const response = await fetch(`/books/${bookId}`, {
                     method: "DELETE",
                     headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
                 });
 
+                const result = await response.json();
                 if (response.ok) {
                     alert("Книга удалена!");
                     loadBooks();
                 } else {
-                    alert("Ошибка удаления книги!");
+                    alert("Ошибка: " + result.message);
                 }
             } catch (error) {
                 console.error("Ошибка удаления книги:", error);
@@ -265,50 +291,47 @@
 
         // изменение параметров книги
         async function editBook(bookId) {
-    const title = prompt("Введите новое название книги (оставьте пустым, если не изменяется):");
-    const author = prompt("Введите нового автора (оставьте пустым, если не изменяется):");
-    const genre = prompt("Введите новый жанр (оставьте пустым, если не изменяется):");
-    const coverImage = prompt("Введите новую ссылку на обложку (оставьте пустым, если не изменяется):");
-    const priceInput = prompt("Введите новую цену (оставьте пустым, если не изменяется):");
+            const title = prompt("Новое название (оставьте пустым, если не меняется):");
+            const author = prompt("Новый автор (оставьте пустым, если не меняется):");
+            const genre = prompt("Новый жанр (оставьте пустым, если не меняется):");
+            const coverImage = prompt("Новая ссылка на обложку (оставьте пустым, если не меняется):");
+            const priceInput = prompt("Новая цена (оставьте пустым, если не меняется):");
 
-    const updateData = {};
+            const updateData = {};
+            if (title) updateData.title = title;
+            if (author) updateData.author = author;
+            if (genre) updateData.genre = genre;
+            if (coverImage) updateData.coverImage = coverImage;
+            if (priceInput && !isNaN(priceInput)) updateData.price = parseFloat(priceInput);
 
-    // добавляем только те поля, которые не пустые
-    if (title) updateData.title = title;
-    if (author) updateData.author = author;
-    if (genre) updateData.genre = genre;
-    if (coverImage) updateData.coverImage = coverImage;
-    if (priceInput && !isNaN(priceInput)) updateData.price = parseFloat(priceInput);
+            if (Object.keys(updateData).length === 0) {
+                alert("Нет данных для обновления!");
+                return;
+            }
 
-    // если нет данных для обновления — выходим
-    if (Object.keys(updateData).length === 0) {
-        alert("Нет данных для обновления!");
-        return;
-    }
+            try {
+                const response = await fetch(`/books/${bookId}`, {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${localStorage.getItem("token")}`
+                    },
+                    body: JSON.stringify(updateData)
+                });
 
-    try {
-        const response = await fetch(`/books/${bookId}`, {
-            method: "PATCH", 
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
-            },
-            body: JSON.stringify(updateData)
-        });
-
-        if (response.ok) {
-            alert("Книга успешно обновлена!");
-            loadBooks(); // перезагрузить список книг
-        } else {
-            const errorData = await response.json();
-            alert("Ошибка: " + errorData.message);
+                const result = await response.json();
+                if (response.ok) {
+                    alert("Книга обновлена!");
+                    loadBooks();
+                } else {
+                    alert("Ошибка: " + result.message);
+                }
+            } catch (error) {
+                console.error("Ошибка редактирования книги:", error);
+            }
         }
-    } catch (error) {
-        console.error("Ошибка редактирования книги", error);
-    }
-}
-
     </script>
+
 
 </body>
 </html>
