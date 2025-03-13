@@ -10,7 +10,7 @@
             margin: 20px;
             background-color: beige;
         }
-
+    
         header {
             display: flex;
             justify-content: space-between;
@@ -18,31 +18,12 @@
             background: rgb(197, 152, 92);
             padding: 15px;
             color: white;
+            border-radius: 8px;
         }
-
+    
         header h1 {
             margin: 0;
-        }
-
-        .search-bar {
-            display: flex;
-            gap: 10px;
-        }
-
-        .search-bar input {
-            padding: 5px;
-            width: 200px;
-        }
-
-        .search-bar button {
-            padding: 5px 10px;
-            background: cornsilk;
-            border: none;
-            cursor: pointer;
-        }
-
-        .search-bar button:hover {
-            background: white;
+            font-size: 26px;
         }
 
         nav {
@@ -50,24 +31,35 @@
             gap: 15px;
             align-items: center;
         }
-
+    
         nav a, nav button {
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
             background: none;
             border: none;
-            cursor: pointer;
+            color: white;
             font-size: 16px;
-        }
-
-        nav a:hover, nav button:hover {
-            text-decoration: underline;
-        }
-
-        #user-info {
-            display: none;
             font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+    
+        .search-bar input {
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            width: 220px;
+        }
+    
+        .search-bar button {
+            padding: 8px 12px;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
         }
 
         main {
@@ -78,34 +70,43 @@
             border-radius: 8px;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
         }
-
+    
         h2 {
             text-align: center;
+            margin-bottom: 20px;
         }
 
         label {
             font-weight: bold;
+            margin-right: 10px;
         }
-
+    
         select {
-            padding: 5px;
-            margin-left: 10px;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            margin-bottom: 20px;
         }
 
         #books-list {
             display: flex;
             flex-wrap: wrap;
-            gap: 15px;
+            gap: 20px;
             justify-content: center;
+            padding: 10px;
         }
 
         .book {
             background: #fff;
             border: 1px solid #ddd;
-            padding: 10px;
-            width: 200px;
+            padding: 15px;
+            width: 220px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
             text-align: center;
-            border-radius: 5px;
+            border-radius: 8px;
             box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
         }
 
@@ -113,124 +114,157 @@
             width: 100%;
             height: auto;
             border-radius: 5px;
+            margin-bottom: 10px;
         }
 
         .book h3 {
             font-size: 18px;
             margin: 10px 0 5px;
         }
-
+    
         .book p {
-            margin: 5px 0;
+            margin: 4px 0;
             font-size: 14px;
             color: #555;
         }
+    
+        .book button.add-to-cart-btn {
+            background: green;
+            color: white;
+            border: none;
+            padding: 10px 0;
+            border-radius: 8px;
+            width: 100%;
+            cursor: pointer;
+            font-size: 16px;
+        }
+    
+        #cart {
+            background: white;
+            padding: 6px 10px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
 
+        #cart-count {
+            background: red;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 14px;
+        }
     </style>
+    
 </head>
 <body>
 
-    <header>
-        <h1>Книжный Магазин</h1>
-        <div class="search-bar">
-            <input type="text" id="search" placeholder="Поиск книг...">
-            <button onclick="searchBooks()">🔍</button>
-        </div>
-        <nav id="auth-nav">
-            <a href="/login.html" id="login-link">Войти</a>
-            <a href="/register.html" id="register-link">Регистрация</a>
-            <span id="user-info" style="display: none;">
-                <b id="username"></b>
-                <button onclick="logout()" style="margin-left: 10px;">Выйти</button>
-            </span>
-        </nav>
-    </header>
+<header>
+    <h1>Книжный Магазин</h1>
+    <div class="search-bar">
+        <input type="text" id="search" placeholder="Поиск книг...">
+        <button onclick="searchBooks()">🔍</button>
+    </div>
+    <nav id="auth-nav">
+        <a href="/login" id="login-link">Войти</a>
+        <a href="/register" id="register-link">Регистрация</a>
+        <a href="/cart" id="cart">🛒 <span id="cart-count">0</span></a>
+        <span id="user-info" style="display: none;">
+            <a href="/profile" id="username" style="color: white; text-decoration: none;"></a>
+            <button onclick="logout()">Выйти</button>
+        </span>
+    </nav>
+</header>
 
-    <main>
-        <h2>Каталог книг</h2>
-        <label for="genre">Жанры:</label>
-        <select id="genre" onchange="filterBooks()">
-            <option value="">Все</option>
-            <option value="Фэнтези">Фэнтези</option>
-            <option value="Детектив">Детектив</option>
-            <option value="Роман">Роман</option>
-        </select>
-        <div id="books-list"></div>
-    </main>
+<main>
+    <h2>Каталог книг</h2>
+    <label for="genre">Жанры:</label>
+    <select id="genre" onchange="filterBooks()">
+        <option value="">Все</option>
+        <option value="Фэнтези">Фэнтези</option>
+        <option value="Детектив">Детектив</option>
+        <option value="Роман">Роман</option>
+    </select>
+    <div id="books-list"></div>
+</main>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            checkAuth();
-            loadBooks();
-        });
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+    checkAuth();
+    loadBooks();
+    updateCartCount();
+});
 
-        // Проверка аутентификации пользователя
-        function checkAuth() {
-            const userData = localStorage.getItem('user');
-            const token = localStorage.getItem('token');
+// Проверка аутентификации пользователя
+function checkAuth() {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const token = localStorage.getItem('token');
 
-            if (userData && token) {
-                try {
-                    const user = JSON.parse(userData);
-                    document.getElementById("username").textContent = user.name;
-                    document.getElementById("user-info").style.display = "inline-block";
-                    document.getElementById("login-link").style.display = "none";
-                    document.getElementById("register-link").style.display = "none";
-                } catch (error) {
-                    console.error("Ошибка парсинга JSON:", error);
-                    localStorage.removeItem('user'); // Удаление поврежденных данных
-                    localStorage.removeItem('token');
-                    window.location.href = "/login.html"; // Перенаправляем на страницу входа
-                }
-            } else {
-                document.getElementById("user-info").style.display = "none";
-                document.getElementById("login-link").style.display = "inline-block";
-                document.getElementById("register-link").style.display = "inline-block";
-            }
-        }
+    if (user && token) {
+        document.getElementById("username").textContent = user.name;
+        document.getElementById("username").href = `/profile/${user.id}`;
+        document.getElementById("user-info").style.display = "inline-block";
+        document.getElementById("login-link").style.display = "none";
+        document.getElementById("register-link").style.display = "none";
+    }
+}
+// Функция выхода из аккаунта
+function logout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    window.location.href = "/login";
+}
 
-        // Функция выхода из аккаунта
-        function logout() {
-            localStorage.removeItem("token");
-            localStorage.removeItem("user");
-            window.location.href = "/login.html";
-        }
+// Загружаем список книг с возможностью фильтрации по жанру и поиску
+async function loadBooks(genre = "", search = "") {
+    try {
+        const response = await fetch(`/books?genre=${genre}&search=${search}&nocache=${Date.now()}`);
+        const books = await response.json();
+        document.getElementById("books-list").innerHTML = books.map(book => `
+            <div class="book">
+                <img src="${book.coverImage}" alt="${book.title}">
+                <h3>${book.title}</h3>
+                <p>Автор: ${book.author}</p>
+                <p>Жанр: ${book.genre}</p>
+                <p>Цена: ${book.price}₸</p>
+                <button class="add-to-cart-btn" onclick='addToCart(${JSON.stringify(book)})'>Добавить в корзину</button>
+            </div>
+        `).join("");
+    } catch (error) {
+        console.error("Ошибка загрузки книг:", error);
+    }
+}
 
-        // Загружаем список книг с возможностью фильтрации по жанру и поиску
-        async function loadBooks(genre = "", search = "") { 
-            try {
-                let url = `/books?genre=${genre}&search=${search}&nocache=${new Date().getTime()}`;
-                const response = await fetch(url);
-                if (!response.ok) throw new Error("Ошибка загрузки книг");
+// Фильтрация книг по жанру
+function filterBooks() {
+    const genre = document.getElementById("genre").value;
+    loadBooks(genre);
+}
 
-                const books = await response.json();
+// Поиск книг
+function searchBooks() {
+    const search = document.getElementById("search").value;
+    loadBooks("", search);
+}
 
-                document.getElementById("books-list").innerHTML = books.map(book => `
-                    <div class="book">
-                        <img src="${book.coverImage}" alt="${book.title}">
-                        <h3>${book.title}</h3>
-                        <p>Автор: ${book.author}</p>
-                        <p>Жанр: ${book.genre}</p>
-                        <p>Цена: ${book.price}₸</p>
-                    </div>
-                `).join("");
-            } catch (error) {
-                console.error("Ошибка при загрузке книг:", error);
-            }
-        }
 
-        // Фильтрация книг по жанру
-        function filterBooks() {
-            const genre = document.getElementById("genre").value;
-            loadBooks(genre);
-        }
+// добавление в корзину
+function addToCart(book) {
+    const cart = JSON.parse(localStorage.getItem('cart')) || [];
+    cart.push(book);
+    localStorage.setItem('cart', JSON.stringify(cart));
+    updateCartCount();
+    alert(`Книга "${book.title}" добавлена в корзину!`);
+}
 
-        // Поиск книг
-        function searchBooks() {
-            const search = document.getElementById("search").value;
-            loadBooks("", search);
-        }
+function updateCartCount() {
+    const cart = JSON.parse(localStorage.getItem('cart')) || [];
+    document.getElementById('cart-count').textContent = cart.length;
+}
 
-    </script>
+</script>
+
 </body>
 </html>
