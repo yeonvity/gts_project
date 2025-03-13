@@ -80,13 +80,13 @@ router.post('/login', [
         const user = await User.findOne({ email });
 
         if (!user) {
-            return res.status(404).json({ message: "Пользователь не найден" });
+            return res.status(404).json({ message: "Неверный пароль или email" });
         }
 
         // проверка пароля
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(401).json({ message: "Неверный пароль" });
+            return res.status(401).json({ message: "Неверный пароль или email" });
         }
 
         // генерируем JWT-токен
@@ -101,8 +101,9 @@ router.post('/login', [
         res.json({ 
             message: "Вход успешен!", 
             token, 
-            user: { name: user.name, role: user.role }  // отправляем user
+            user: { id: user._id, name: user.name, role: user.role } 
         });
+        
 
     } catch (error) {
         console.error("Ошибка сервера:", error);
