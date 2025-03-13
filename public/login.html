@@ -33,47 +33,57 @@
             <button type="submit">Войти</button>
         </form>
         <p class="message" id="message"></p>
-        <a href="register.html">Зарегистрироваться</a>
+        <a href="register">Зарегистрироваться</a>
     </div>
 
     <script>
         document.getElementById('loginForm').addEventListener('submit', async function(event) {
             event.preventDefault();
     
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
             const messageElement = document.getElementById('message');
-
+    
+            messageElement.textContent = ""; // Очищаем сообщение перед запросом
+    
             try {
                 const response = await fetch('/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
-
+    
                 const data = await response.json();
-                console.log("Ответ сервера:", data); //логируем ответ сервера
-
-                if (response.ok && data.token && data.user) {
-                    // сохраняем токен и пользователя в LocalStorage
+                console.log("Ответ сервера:", data); // Логируем ответ сервера
+    
+                if (!response.ok) {
+                    throw new Error(data.message || "Ошибка входа!");
+                }
+    
+                if (data.token && data.user) {
+                    // Сохраняем токен и пользователя в localStorage
                     localStorage.setItem('token', data.token);
-                    localStorage.setItem('user', JSON.stringify(data.user));
-
-                    // проверяем роль пользователя и перенаправляем
-                    if (data.user.role === "admin") {
-                        window.location.href = '/admin.html'; // admin попадает в админ-панель
-                    } else {
-                        window.location.href = '/catalog.html'; // user попадает в каталог
-                    }
+                    localStorage.setItem('user', JSON.stringify({
+                        id: data.user.id || data.user._id, 
+                        name: data.user.name,
+                        role: data.user.role
+                    }));
+    
+                    console.log("Сохранён пользователь:", localStorage.getItem('user'));
+    
+                    // Перенаправляем пользователя в зависимости от его роли
+                    window.location.href = data.user.role === "admin" ? '/admin' : '/catalog';
                 } else {
-                    messageElement.textContent = data.message || "Ошибка входа!";
+                    throw new Error("Неполные данные в ответе сервера");
                 }
             } catch (error) {
-                console.error("Ошибка при отправке запроса:", error);
-                messageElement.textContent = "Ошибка подключения к серверу!";
+                console.error("Ошибка при входе:", error);
+                messageElement.textContent = error.message;
             }
         });
     </script>
+    
+    
     
 </body>
 </html>
