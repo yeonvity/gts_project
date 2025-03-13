@@ -19,7 +19,7 @@
         }
         button:hover { background-color: darkgreen; }
         a { display: block; margin-top: 10px; color: purple; text-decoration: none; }
-        .message { margin-top: 10px; font-weight: bold; }
+        .message { margin-top: 10px; font-weight: bold; color: red; }
     </style>
 </head>
 <body>
@@ -35,7 +35,7 @@
             <button type="submit">Зарегистрироваться</button>
         </form>
         <p class="message" id="message"></p>
-        <a href="login.html">Уже есть аккаунт? Войти</a>
+        <a href="login">Уже есть аккаунт? Войти</a>
     </div>
 
     <script>
@@ -58,8 +58,7 @@
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(data.user));
 
-                // После успешной регистрации обновляем каталог
-                window.location.href = '/catalog.html';
+                window.location.href = '/login';
             } else {
                 messageElement.textContent = data.message || "Ошибка регистрации!";
             }
