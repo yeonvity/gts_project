@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Профиль</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: beige;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgb(197, 152, 92);
+            padding: 15px;
+            color: white;
+            border-radius: 8px;
+        }
+        header h1 { margin: 0; }
+        main {
+            max-width: 600px;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: green;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: darkgreen;
+        }
+        .order {
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            background: #f9f9f9;
+        }
+        .order h3 {
+            margin: 0;
+            font-size: 16px;
+        }
+        .order p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Профиль</h1>
+    <a href="/catalog" style="color: white; text-decoration: none; font-weight: bold;">Каталог</a>
+</header>
+<main>
+    <h2>Данные профиля</h2>
+    <form id="profile-form">
+        <label>Имя:</label>
+        <input type="text" id="name">
+        <label>Email:</label>
+        <input type="email" id="email">
+        <label>Старый пароль:</label>
+        <input type="password" id="oldPassword">
+        <label>Новый пароль:</label>
+        <input type="password" id="newPassword">
+        <button type="submit">Обновить</button>
+    </form>
+    <h2>История заказов</h2>
+    <div id="orders"></div>
+</main>
+<script>
+    async function loadProfile() {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/profile', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (response.ok) {
+            document.getElementById('name').value = data.user.name;
+            document.getElementById('email').value = data.user.email;
+            const ordersContainer = document.getElementById('orders');
+            ordersContainer.innerHTML = '';
+            data.orders.forEach(order => {
+                const orderElement = document.createElement('div');
+                orderElement.className = 'order';
+                const formattedDate = new Date(order.createdAt).toLocaleString('ru-RU');
+                orderElement.innerHTML = `
+                    <h3>Заказ на сумму ${order.totalAmount}₸</h3>
+                    <p><strong>Дата покупки:</strong> ${formattedDate}</p>
+                    <p><strong>Товары:</strong></p>
+                    <ul>
+                        ${order.items.map(item => `<li>${item.title} - ${item.quantity} шт. (Цена: ${item.price}₸)</li>`).join('')}
+                    </ul>
+                `;
+                ordersContainer.appendChild(orderElement);
+            });
+        } else {
+            alert(data.message);
+        }
+    }
+
+    document.getElementById('profile-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem('token');
+    const oldPassword = document.getElementById('oldPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+
+    if (newPassword && !oldPassword) {
+        alert('Введите текущий пароль для смены пароля.');
+        return;
+    }
+
+    const response = await fetch('/profile', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+            name: document.getElementById('name').value,
+            email: document.getElementById('email').value,
+            oldPassword,
+            newPassword
+        })
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+        alert(`Ошибка: ${data.message}`);
+    } else {
+        alert(data.message);
+    }
+});
+
+
+    document.addEventListener('DOMContentLoaded', loadProfile);
+</script>
+</body>
+</html>
