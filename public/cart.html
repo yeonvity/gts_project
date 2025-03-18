@@ -121,6 +121,26 @@
             margin: 50px 0;
         }
 
+        .message-box {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            z-index: 1000;
+            opacity: 0.9;
+        }
+
+        .message-success {
+            background: green;
+        }
+
+        .message-error {
+            background: red;
+        }
+
         a {
             color: white;
             text-decoration: none;
@@ -143,6 +163,18 @@
 <script>
     let cart = JSON.parse(localStorage.getItem('cart')) || [];
 
+    function showMessage(message, type = 'success') {
+        const messageBox = document.createElement('div');
+        messageBox.textContent = message;
+        messageBox.className = 'message-box ' + (type === 'success' ? 'message-success' : 'message-error');
+
+        document.body.appendChild(messageBox);
+
+        setTimeout(() => {
+            messageBox.remove();
+        }, 1000);
+    }
+
     function renderCart() {
         const container = document.getElementById('cart-container');
         container.innerHTML = '';
@@ -155,14 +187,13 @@
         let totalPrice = 0;
 
         const table = document.createElement('table');
-        const thead = `
+        table.innerHTML = `
             <tr>
                 <th>Книга</th>
                 <th>Цена</th>
                 <th>Кол-во</th>
                 <th>Действия</th>
             </tr>`;
-        table.innerHTML = thead;
 
         cart.forEach((item, index) => {
             if (!item.quantity) item.quantity = 1;
@@ -221,31 +252,29 @@
     }
 
     async function checkout() {
-    if (cart.length === 0) return alert("Корзина пуста!");
+        const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const token = localStorage.getItem('token');
 
-    const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const token = localStorage.getItem('token');
+        const response = await fetch('/orders-api', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ items: cart, totalAmount })
+        });
 
-    const response = await fetch('/orders-api', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ items: cart, totalAmount })
-    });
+        const data = await response.json();
 
-    const data = await response.json();
-
-    if (response.ok) {
-        alert(data.message);
-        cart = [];
-        saveCart();
-        renderCart();
-    } else {
-        alert("Ошибка: " + data.message);
+        if (response.ok) {
+            showMessage(data.message, 'success');
+            cart = [];
+            saveCart();
+            renderCart();
+        } else {
+            showMessage("Ошибка: " + data.message, 'error');
+        }
     }
-}
 
     function saveCart() {
         localStorage.setItem('cart', JSON.stringify(cart));
@@ -253,5 +282,6 @@
 
     document.addEventListener('DOMContentLoaded', renderCart);
 </script>
+
 </body>
 </html>
