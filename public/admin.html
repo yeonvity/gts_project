@@ -100,7 +100,6 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: space-between;
             text-align: center;
             border-radius: 8px;
             box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
@@ -115,7 +114,7 @@
 
         .book h3 {
             font-size: 18px;
-            margin: 10px 0 5px
+            margin: 10px 0 5px;
         }
 
         .book p {
@@ -124,214 +123,190 @@
             color: #555;
         }
 
-        .book button.delete-btn {
+        .book button {
+            margin-top: 5px;
+        }
+
+        .delete-btn {
             background: red;
         }
-        
-        .book button.delete-btn:hover {
+
+        .delete-btn:hover {
             background: darkred;
         }
         
-        .book button.edit-btn {
+        .edit-btn {
             background: green;
         }
 
-        .book button.edit-btn:hover {
+        .edit-btn:hover {
             background: darkgreen;
+        }
+
+        .edit-form {
+            display: none;
+            margin-top: 10px;
+        }
+
+        .save-btn {
+            background: green;
+            color:white;
+            border: none;
+            padding: 8px;
+            margin-top: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .message {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 10px;
         }
 
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>Админ-панель</h1>
-        <nav>
-            <a href="/catalog">Каталог</a>
-            <button onclick="logout()">Выйти</button>
-        </nav>
-    </header>
+<header>
+    <h1>Админ-панель</h1>
+    <nav>
+        <a href="/catalog">Каталог</a>
+        <button onclick="logout()">Выйти</button>
+    </nav>
+</header>
 
-    <main>
-        <h2>Управление книгами</h2>
+<main>
+    <h2>Управление книгами</h2>
 
-        <div class="admin-actions">
-            <input type="text" id="title" placeholder="Название книги">
-            <input type="text" id="author" placeholder="Автор">
-            <select id="genre">
-                <option value="">Выберите жанр</option>
-                <option value="Фэнтези">Фэнтези</option>
-                <option value="Детектив">Детектив</option>
-                <option value="Роман">Роман</option>
-            </select>
-            <input type="text" id="coverImage" placeholder="Ссылка на обложку">
-            <input type="number" id="price" placeholder="Цена">
-            <button class="add-btn" onclick="addBook()">Добавить книгу</button>
+    <div id="message" class="message"></div>
+
+    <div class="admin-actions">
+        <input type="text" id="title" placeholder="Название книги">
+        <input type="text" id="author" placeholder="Автор">
+        <select id="genre">
+            <option value="">Выберите жанр</option>
+            <option value="Фэнтези">Фэнтези</option>
+            <option value="Детектив">Детектив</option>
+            <option value="Роман">Роман</option>
+        </select>
+        <input type="text" id="coverImage" placeholder="Ссылка на обложку">
+        <input type="number" id="price" placeholder="Цена">
+        <button class="add-btn" onclick="addBook()">Добавить книгу</button>
+    </div>
+
+    <h2>Список книг</h2>
+    <div id="books-list"></div>
+</main>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    checkAuth();
+    loadBooks();
+});
+
+function checkAuth() {
+    const token = localStorage.getItem("token");
+    if (!token) {
+        window.location.replace("/login");
+    }
+}
+
+async function addBook() {
+    const title = document.getElementById("title").value;
+    const author = document.getElementById("author").value;
+    const genre = document.getElementById("genre").value;
+    const coverImage = document.getElementById("coverImage").value;
+    const price = document.getElementById("price").value;
+
+    if (!title || !author || !genre || !price) {
+        showMessage("Заполните все поля!", "red");
+        return;
+    }
+
+    const response = await fetch('/books', {
+        method: "POST",
+        headers: { 
+            "Content-Type": "application/json", 
+            "Authorization": `Bearer ${localStorage.getItem("token")}`
+        },
+        body: JSON.stringify({ title, author, genre, coverImage, price })
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+        showMessage(result.message, "green");
+        loadBooks();
+    } else {
+        showMessage(result.message || "Ошибка!", "red");
+    }
+}
+
+async function loadBooks() {
+    const response = await fetch('/books', {
+        headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+    });
+    const books = await response.json();
+
+    document.getElementById("books-list").innerHTML = books.map(book => `
+        <div class="book" data-id="${book._id}">
+            <img src="${book.coverImage}" alt="${book.title}">
+            <h3>${book.title}</h3>
+            <p>Автор: ${book.author}</p>
+            <p>Жанр: ${book.genre}</p>
+            <p>Цена: ${book.price}₸</p>
+            <button class="edit-btn" onclick="toggleEditForm('${book._id}')">Редактировать</button>
+            <button class="delete-btn" onclick="deleteBook('${book._id}')">Удалить</button>
+            <div class="edit-form" id="edit-form-${book._id}">
+                <input type="text" id="edit-title-${book._id}" placeholder="Название" value="${book.title}">
+                <input type="text" id="edit-author-${book._id}" placeholder="Автор" value="${book.author}">
+                <input type="text" id="edit-genre-${book._id}" placeholder="Жанр" value="${book.genre}">
+                <input type="text" id="edit-cover-${book._id}" placeholder="Обложка" value="${book.coverImage}">
+                <input type="number" id="edit-price-${book._id}" placeholder="Цена" value="${book.price}">
+                <button class="save-btn" onclick="saveEdit('${book._id}')">Сохранить</button>
+            </div>
         </div>
+    `).join("");
+}
 
-        <h2>Список книг</h2>
-        <div id="books-list"></div>
-    </main>
+function showMessage(text, color) {
+    const message = document.getElementById("message");
+    message.textContent = text;
+    message.style.color = color;
+    setTimeout(() => message.textContent = "", 3000);
+}
 
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            checkAuth();
-            loadBooks();
-        });
+function toggleEditForm(id) {
+    document.getElementById(`edit-form-${id}`).style.display = "block";
+}
 
-        // проверка аутентификации
-        function checkAuth() {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                alert("Нет доступа. Пожалуйста, войдите как админ.");
-                window.location.href = "/login";
-            }
+async function saveEdit(id) {
+    const title = document.getElementById(`edit-title-${id}`).value;
+    const author = document.getElementById(`edit-author-${id}`).value;
+    const genre = document.getElementById(`edit-genre-${id}`).value;
+    const coverImage = document.getElementById(`edit-cover-${id}`).value;
+    const price = document.getElementById(`edit-price-${id}`).value;
 
-            try {
-                const decodedToken = JSON.parse(atob(token.split(".")[1]));
-                if (decodedToken.role !== "admin") {
-                    alert("У вас нет прав администратора!");
-                    window.location.href = "/catalog";
-                }
-            } catch (error) {
-                console.error("Ошибка проверки токена:", error);
-                logout();
-            }
-        }
+    await fetch(`/books/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${localStorage.getItem("token")}` },
+        body: JSON.stringify({ title, author, genre, coverImage, price })
+    });
 
-        // выход из системы
-        function logout() {
-            localStorage.removeItem("token");
-            localStorage.removeItem("user");
-            window.location.href = "/login";
-        }
+    loadBooks();
+}
 
-        // загрузка списка книг
-        async function loadBooks() {
-            try {
-                const response = await fetch('/books', {
-                    headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-                });
-                const books = await response.json();
-                console.log("Книги:", books);
+async function deleteBook(id) {
+    await fetch(`/books/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` } });
+    loadBooks();
+}
 
-                const booksList = document.getElementById("books-list");
-                booksList.innerHTML = books.map(book => `
-                    <div class="book">
-                        <img src="${book.coverImage}" alt="${book.title}">
-                        <h3>${book.title}</h3>
-                        <p>Автор: ${book.author}</p>
-                        <p>Жанр: ${book.genre}</p>
-                        <p>Цена: ${book.price}₸</p>
-                        <button class="edit-btn" onclick="editBook('${book._id}')">Редактировать</button>
-                        <button class="delete-btn" onclick="deleteBook('${book._id}')">Удалить</button>
-                    </div>
-                `).join("");
-            } catch (error) {
-                console.error("Ошибка при загрузке книг:", error);
-            }
-        }
-
-        // добавление книги
-        async function addBook() {
-            const title = document.getElementById("title").value;
-            const author = document.getElementById("author").value;
-            const genre = document.getElementById("genre").value;
-            const coverImage = document.getElementById("coverImage").value;
-            const price = document.getElementById("price").value;
-
-            if (!title || !author || !genre || !price) {
-                alert("Заполните обязательные поля!");
-                return;
-            }
-
-            try {
-                const response = await fetch('/books/add', {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${localStorage.getItem("token")}`
-                    },
-                    body: JSON.stringify({ title, author, genre, coverImage, price })
-                });
-
-                const data = await response.json();
-                if (response.ok) {
-                    alert("Книга добавлена!");
-                    loadBooks();
-                } else {
-                    alert("Ошибка: " + data.message);
-                }
-            } catch (error) {
-                console.error("Ошибка при добавлении книги:", error);
-            }
-        }
-
-        // удаление книги
-        async function deleteBook(bookId) {
-            if (!confirm("Вы уверены, что хотите удалить эту книгу?")) return;
-
-            try {
-                const response = await fetch(`/books/${bookId}`, {
-                    method: "DELETE",
-                    headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-                });
-
-                const result = await response.json();
-                if (response.ok) {
-                    alert("Книга удалена!");
-                    loadBooks();
-                } else {
-                    alert("Ошибка: " + result.message);
-                }
-            } catch (error) {
-                console.error("Ошибка удаления книги:", error);
-            }
-        }
-
-        // изменение параметров книги
-        async function editBook(bookId) {
-            const title = prompt("Новое название (оставьте пустым, если не меняется):");
-            const author = prompt("Новый автор (оставьте пустым, если не меняется):");
-            const genre = prompt("Новый жанр (оставьте пустым, если не меняется):");
-            const coverImage = prompt("Новая ссылка на обложку (оставьте пустым, если не меняется):");
-            const priceInput = prompt("Новая цена (оставьте пустым, если не меняется):");
-
-            const updateData = {};
-            if (title) updateData.title = title;
-            if (author) updateData.author = author;
-            if (genre) updateData.genre = genre;
-            if (coverImage) updateData.coverImage = coverImage;
-            if (priceInput && !isNaN(priceInput)) updateData.price = parseFloat(priceInput);
-
-            if (Object.keys(updateData).length === 0) {
-                alert("Нет данных для обновления!");
-                return;
-            }
-
-            try {
-                const response = await fetch(`/books/${bookId}`, {
-                    method: "PATCH",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${localStorage.getItem("token")}`
-                    },
-                    body: JSON.stringify(updateData)
-                });
-
-                const result = await response.json();
-                if (response.ok) {
-                    alert("Книга обновлена!");
-                    loadBooks();
-                } else {
-                    alert("Ошибка: " + result.message);
-                }
-            } catch (error) {
-                console.error("Ошибка редактирования книги:", error);
-            }
-        }
-    </script>
-
+function logout() {
+    localStorage.removeItem("token"); 
+    window.location.replace("/login"); 
+}
+</script>
 
 </body>
 </html>
