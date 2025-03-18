@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -5,7 +6,7 @@ const { body, validationResult } = require('express-validator');
 const User = require('../model/users');
 
 const router = express.Router();
-const JWT_SECRET = "123456"; 
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // регистрация пользователя
 router.post('/register', [
@@ -13,8 +14,6 @@ router.post('/register', [
     body('email').isEmail().withMessage("Некорректный email"),
     body('password').isLength({ min: 6 }).withMessage("Пароль должен содержать минимум 6 символов")
 ], async (req, res) => {
-    console.log("Запрос на регистрацию:", req.body);
-
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ message: "Некорректные данные", errors: errors.array() });
@@ -36,28 +35,14 @@ router.post('/register', [
             name,
             email,
             password: hashedPassword,
-            role: 'user' 
+            role: 'user'
         });
 
         await newUser.save();
 
-        // генерируем токен
-        const token = jwt.sign(
-            { id: newUser._id, email: newUser.email, role: newUser.role },
-            JWT_SECRET,
-            { expiresIn: '1h' }
-        );
-
-        console.log("Токен при регистрации:", token);
-
-        res.status(201).json({ 
-            message: "Регистрация успешна!", 
-            token, 
-            user: { name: newUser.name, role: newUser.role }  // отправляем user
-        });
+        res.status(201).json({ message: "Регистрация успешна!" });
 
     } catch (error) {
-        console.error("Ошибка сервера:", error);
         res.status(500).json({ message: "Ошибка сервера", error });
     }
 });
@@ -67,8 +52,6 @@ router.post('/login', [
     body('email').isEmail().withMessage("Некорректный email"),
     body('password').notEmpty().withMessage("Пароль обязателен")
 ], async (req, res) => {
-    console.log("Запрос на вход:", req.body);
-
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ message: "Некорректные данные", errors: errors.array() });
@@ -93,20 +76,16 @@ router.post('/login', [
         const token = jwt.sign(
             { id: user._id, email: user.email, role: user.role },
             JWT_SECRET,
-            { expiresIn: '24h' }
+            { expiresIn: '1h' }
         );
 
-        console.log("Токен при входе:", token); // логируем токен
-
-        res.json({ 
-            message: "Вход успешен!", 
-            token, 
-            user: { id: user._id, name: user.name, role: user.role } 
+        res.json({
+            message: "Вход успешен!",
+            token,
+            user: { id: user._id, name: user.name, role: user.role }
         });
-        
 
     } catch (error) {
-        console.error("Ошибка сервера:", error);
         res.status(500).json({ message: "Ошибка сервера", error });
     }
 });
