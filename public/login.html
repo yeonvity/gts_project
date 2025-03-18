@@ -27,9 +27,9 @@
     <div class="container">
         <form id="loginForm">
             <label for="email">Email:</label>
-            <input type="email" id="email" required>
+            <input type="email" id="email" required autocomplete="off">
             <label for="password">Пароль:</label>
-            <input type="password" id="password" required>
+            <input type="password" id="password" required autocomplete="off">
             <button type="submit">Войти</button>
         </form>
         <p class="message" id="message"></p>
@@ -44,7 +44,7 @@
             const password = document.getElementById('password').value.trim();
             const messageElement = document.getElementById('message');
     
-            messageElement.textContent = ""; // Очищаем сообщение перед запросом
+            messageElement.textContent = "";
     
             try {
                 const response = await fetch('/auth/login', {
@@ -54,36 +54,27 @@
                 });
     
                 const data = await response.json();
-                console.log("Ответ сервера:", data); // Логируем ответ сервера
     
                 if (!response.ok) {
                     throw new Error(data.message || "Ошибка входа!");
                 }
     
                 if (data.token && data.user) {
-                    // Сохраняем токен и пользователя в localStorage
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('user', JSON.stringify({
-                        id: data.user.id || data.user._id, 
+                        id: data.user.id, 
                         name: data.user.name,
                         role: data.user.role
                     }));
     
-                    console.log("Сохранён пользователь:", localStorage.getItem('user'));
-    
-                    // Перенаправляем пользователя в зависимости от его роли
-                    window.location.href = data.user.role === "admin" ? '/admin' : '/catalog';
+                    window.location.replace(data.user.role === "admin" ? '/admin' : '/catalog');
                 } else {
                     throw new Error("Неполные данные в ответе сервера");
                 }
             } catch (error) {
-                console.error("Ошибка при входе:", error);
                 messageElement.textContent = error.message;
             }
         });
     </script>
-    
-    
-    
 </body>
 </html>
