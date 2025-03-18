@@ -16,7 +16,7 @@ router.post('/', authMiddleware, async (req, res) => {
         res.json({ message: 'Заказ успешно оформлен!' });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Ошибка при оформлении заказа' });
+        res.status(500).json({ message: 'Ошибка сервера' });
     }
 });
 
