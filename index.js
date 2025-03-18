@@ -1,57 +1,57 @@
 const express = require('express');
-const path = require('path');
-const mongoose = require('mongoose');
-const authRoutes = require('./routes/auth');
-const bookRoutes = require('./routes/books');
-const adminRoutes = require('./routes/admin');
-const profileRoutes = require('./routes/profile'); 
-const orderRoutes = require('./routes/orders');
-const authMiddleware = require('./middleware/auth');
+const router = express.Router();
+const User = require('../model/users');
+const Order = require('../model/orders');
+const authMiddleware = require('../middleware/auth');
+const bcrypt = require('bcrypt');
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.use(express.json());
-
-app.use(express.static(path.join(__dirname, 'public')));
-
-// маршруты
-app.use('/auth', authRoutes);
-app.use('/books', bookRoutes);
-app.use('/admin-api', adminRoutes); 
-app.use('/profile', profileRoutes);
-app.use('/orders-api', orderRoutes);
-
-// страницы
-app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
-app.get('/register', (req, res) => res.sendFile(path.join(__dirname, 'public', 'register.html')));
-app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
-app.get('/catalog', (req, res) => res.sendFile(path.join(__dirname, 'public', 'catalog.html')));
-app.get('/cart', (req, res) => res.sendFile(path.join(__dirname, 'public', 'cart.html')));
-app.get('/profile/:id', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'profile.html'));
-});
-
-
-app.get('/', (req, res) => {
-    res.redirect('/catalog');
-});
-
-// подключение к MongoDB
-const uri = "mongodb+srv://aidakerimbayeva04:WKTtY6JtCYHpOQ9L@cluster0.huuql.mongodb.net/database?retryWrites=true&w=majority&appName=Cluster0";
-const start = async () => {
+// Получение профиля и истории заказов
+router.get('/', authMiddleware, async (req, res) => {
     try {
-        await mongoose.connect(uri);
-        console.log("MongoDB подключен через Mongoose");
-
-        app.listen(PORT, () => {
-            console.log(`Сервер запущен на порту ${PORT}`);
-        });
-
+        const user = await User.findById(req.user.id).select('-password');
+        const orders = await Order.find({ userId: req.user.id }).sort({ createdAt: -1 });
+        res.json({ user, orders });
     } catch (error) {
-        console.error("Ошибка подключения к MongoDB:", error);
-        process.exit(1);
+        console.error(error);
+        res.status(500).json({ message: 'Ошибка сервера' });
     }
-};
+});
 
-start();
+// Обновление данных профиля
+router.put('/', authMiddleware, async (req, res) => {
+    try {
+        const { name, email, oldPassword, newPassword } = req.body;
+        const user = await User.findById(req.user.id).select('+password');
+
+        if (!user) {
+            return res.status(404).json({ message: 'Пользователь не найден' });
+        }
+
+        let updateData = {};
+        if (name) updateData.name = name;
+        if (email) updateData.email = email;
+
+        if (newPassword) {
+            if (!oldPassword) {
+                return res.status(400).json({ message: 'Введите текущий пароль' });
+            }
+
+            const isMatch = await bcrypt.compare(oldPassword, user.password);
+            if (!isMatch) {
+                return res.status(400).json({ message: 'Текущий пароль неверный' });
+            }
+
+            const salt = await bcrypt.genSalt(10);
+            updateData.password = await bcrypt.hash(newPassword, salt);
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(req.user.id, updateData, { new: true }).select('-password');
+        res.json({ message: 'Профиль обновлен', user: updatedUser });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Ошибка сервера' });
+    }
+});
+
+
+module.exports = router;
