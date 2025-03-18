@@ -13,7 +13,7 @@ router.get('/', authMiddleware, async (req, res) => {
         res.json({ user, orders });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Ошибка при получении профиля' });
+        res.status(500).json({ message: 'Ошибка сервера' });
     }
 });
 
@@ -49,7 +49,7 @@ router.put('/', authMiddleware, async (req, res) => {
         res.json({ message: 'Профиль обновлен', user: updatedUser });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Ошибка при обновлении профиля' });
+        res.status(500).json({ message: 'Ошибка сервера' });
     }
 });
 
