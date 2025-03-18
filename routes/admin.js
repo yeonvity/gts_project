@@ -11,7 +11,7 @@ router.get('/books', authMiddleware, adminMiddleware, async (req, res) => {
         const books = await Book.find({});
         res.json(books);
     } catch (error) {
-        res.status(500).json({ message: "Ошибка сервера", error });
+        res.status(500).json({ error });
     }
 });
 
@@ -46,12 +46,12 @@ router.delete('/books/:id', authMiddleware, adminMiddleware, async (req, res) =>
         const deletedBook = await Book.findByIdAndDelete(id);
 
         if (!deletedBook) {
-            return res.status(404).json({ message: "Книга не найдена" });
+            return res.status(404).json({});
         }
 
-        res.json({ message: "Книга успешно удалена", book: deletedBook });
+        res.json({});
     } catch (error) {
-        res.status(500).json({ message: "Ошибка при удалении книги", error });
+        res.status(500).json({ error });
     }
 });
 
@@ -64,12 +64,12 @@ router.patch('/books/:id', authMiddleware, adminMiddleware, async (req, res) => 
         const updatedBook = await Book.findByIdAndUpdate(id, updateData, { new: true });
 
         if (!updatedBook) {
-            return res.status(404).json({ message: "Книга не найдена" });
+            return res.status(404).json({});
         }
 
-        res.json({ message: "Книга успешно обновлена", book: updatedBook });
+        res.json({});
     } catch (error) {
-        res.status(500).json({ message: "Ошибка при обновлении книги", error });
+        res.status(500).json({ error });
     }
 });
 
