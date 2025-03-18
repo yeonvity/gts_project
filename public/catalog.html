@@ -156,6 +156,24 @@
             padding: 2px 6px;
             font-size: 14px;
         }
+
+        #notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .notification {
+            background: green;
+            color: white;
+            padding: 10px 20px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            opacity: 1;
+            transition: opacity 0.5s ease-in-out;
+        }
     </style>
     
 </head>
@@ -178,6 +196,8 @@
     </nav>
 </header>
 
+<div id="notification-container"></div>
+
 <main>
     <h2>Каталог книг</h2>
     <label for="genre">Жанры:</label>
@@ -197,6 +217,8 @@
     updateCartCount();
 });
 
+
+
 // Проверка аутентификации пользователя
 function checkAuth() {
     const user = JSON.parse(localStorage.getItem('user'));
@@ -214,8 +236,18 @@ function checkAuth() {
 function logout() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    window.location.href = "/login";
+    window.location.replace("/login");
 }
+
+const notification = document.createElement('div');
+    notification.className = 'notification';
+    notification.textContent = message;
+    document.getElementById('notification-container').appendChild(notification);
+
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        setTimeout(() => notification.remove(), 500);
+    }, 3000);
 
 // Загружаем список книг с возможностью фильтрации по жанру и поиску
 async function loadBooks(genre = "", search = "") {
@@ -233,7 +265,7 @@ async function loadBooks(genre = "", search = "") {
             </div>
         `).join("");
     } catch (error) {
-        console.error("Ошибка загрузки книг:", error);
+        console.error("Ошибка сервера", error);
     }
 }
 
@@ -249,6 +281,19 @@ function searchBooks() {
     loadBooks("", search);
 }
 
+// функция отображения сообщений
+function showMessage(message) {
+    const notification = document.createElement('div');
+    notification.className = 'notification';
+    notification.textContent = message;
+    document.getElementById('notification-container').appendChild(notification);
+
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        setTimeout(() => notification.remove(), 500);
+    }, 1000);
+}
+
 
 // добавление в корзину
 function addToCart(book) {
@@ -256,7 +301,7 @@ function addToCart(book) {
     cart.push(book);
     localStorage.setItem('cart', JSON.stringify(cart));
     updateCartCount();
-    alert(`Книга "${book.title}" добавлена в корзину!`);
+    showMessage(`Книга "${book.title}" добавлена в корзину!`);
 }
 
 function updateCartCount() {
