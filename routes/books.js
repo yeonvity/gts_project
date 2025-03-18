@@ -79,8 +79,8 @@ router.patch('/:id', authMiddleware, adminMiddleware, async (req, res) => {
 
         res.json({ message: "Книга обновлена!", book: updatedBook });
     } catch (error) {
-        console.error("Ошибка при обновлении книги:", error);
-        res.status(500).json({ message: "Ошибка сервера при обновлении книги" });
+        console.error("Ошибка сервера", error);
+        res.status(500).json({ message: "Ошибка сервера" });
     }
 });
 
